@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataLens AI — Upload</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}"/>
+</head>
+<body class="upload-body">
+
+  <nav class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <svg viewBox="0 0 16 16" fill="#fff" width="16" height="16">
+          <path d="M8 1L10.5 6H15L11.5 9.5L13 14L8 11L3 14L4.5 9.5L1 6H5.5Z"/>
+        </svg>
+      </div>
+      <span class="brand">DataLens <em>AI</em></span>
+    </div>
+    <div class="topbar-right">
+      <span class="nav-badge">Powered by Claude</span>
+    </div>
+  </nav>
+
+  <main class="upload-main">
+    <div class="upload-hero">
+      <h1 class="upload-title">AI-Powered Analytics</h1>
+      <p class="upload-subtitle">Upload your data and get instant KPIs, charts, maps and AI-generated business insights</p>
+    </div>
+
+    <div class="upload-card" id="upload-card">
+      <div class="dropzone" id="dropzone">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36">
+            <path d="M12 16V4m0 0L8 8m4-4l4 4M4 20h16"/>
+          </svg>
+        </div>
+        <div class="drop-title">Drop your file here</div>
+        <div class="drop-sub">Supports CSV, Excel (.xlsx), JSON — up to 50MB</div>
+        <label class="upload-btn" for="file-input">Browse File</label>
+        <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.json" style="display:none"/>
+        <div class="format-pills">
+          <span class="fmt-pill">CSV</span>
+          <span class="fmt-pill">XLSX</span>
+          <span class="fmt-pill">JSON</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-card" id="progress-card" style="display:none">
+      <div class="prog-header">
+        <div class="prog-filename" id="prog-filename">sales_data.csv</div>
+        <div class="prog-pct" id="prog-pct">0%</div>
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-fill" id="prog-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="prog-steps" id="prog-steps">
+        <div class="prog-step" id="step-1"><span class="step-dot wait"></span>Reading file structure</div>
+        <div class="prog-step" id="step-2"><span class="step-dot wait"></span>Detecting column types</div>
+        <div class="prog-step" id="step-3"><span class="step-dot wait"></span>Removing duplicates</div>
+        <div class="prog-step" id="step-4"><span class="step-dot wait"></span>Filling null values</div>
+        <div class="prog-step" id="step-5"><span class="step-dot wait"></span>Saving to database</div>
+        <div class="prog-step" id="step-6"><span class="step-dot wait"></span>Generating KPIs and charts</div>
+      </div>
+    </div>
+
+    <div class="clean-report" id="clean-report" style="display:none">
+      <div class="report-title">Cleaning complete</div>
+      <div class="report-grid" id="report-grid"></div>
+    </div>
+
+    <div class="feature-row">
+      <div class="feat-card">
+        <div class="feat-icon purple">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path d="M9 3H5a2 2 0 00-2 2v4a2 2 0 002 2h4a2 2 0 002-2V5a2 2 0 00-2-2zm10 0h-4a2 2 0 00-2 2v4a2 2 0 002 2h4a2 2 0 002-2V5a2 2 0 00-2-2zM9 13H5a2 2 0 00-2 2v4a2 2 0 002 2h4a2 2 0 002-2v-4a2 2 0 00-2-2z"/>
+          </svg>
+        </div>
+        <div class="feat-title">Auto KPI cards</div>
+        <div class="feat-sub">Revenue, orders, AOV and churn auto-detected from your data</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon green">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 14l-5-5 1.4-1.4L12 14.2l7.6-7.6L21 8l-9 9z"/>
+          </svg>
+        </div>
+        <div class="feat-title">Smart cleaning</div>
+        <div class="feat-sub">Nulls, duplicates and type errors fixed automatically on upload</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon amber">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </div>
+        <div class="feat-title">AI business story</div>
+        <div class="feat-sub">Claude generates narrative insights and risk flags from your data</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataLens AI — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="dash-body">
+
+  <nav class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <svg viewBox="0 0 16 16" fill="#fff" width="16" height="16">
+          <path d="M8 1L10.5 6H15L11.5 9.5L13 14L8 11L3 14L4.5 9.5L1 6H5.5Z"/>
+        </svg>
+      </div>
+      <span class="brand">DataLens <em>AI</em></span>
+      <span class="file-pill">{{ dataset.original }}</span>
+    </div>
+    <div class="topbar-right">
+      <span class="refresh-countdown" id="refresh-countdown">30s</span>
+      <button class="tbtn" onclick="manualRefresh()">↺ Refresh</button>
+      <a href="/upload" class="tbtn">+ New Upload</a>
+      <button class="tbtn ai" onclick="loadStory()">✦ Generate AI Story</button>
+    </div>
+  </nav>
+
+  <div class="dash-layout">
+
+    <aside class="dash-sidebar">
+      <div class="sidebar-item active" title="Dashboard">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15">
+          <path d="M2 2h5v5H2V2zm7 0h5v5H9V2zm-7 7h5v5H2V9zm7 0h5v5H9V9z"/>
+        </svg>
+      </div>
+      <div class="sidebar-item" title="Charts" onclick="toggleVizPanel()">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15">
+          <path d="M2 12h12v2H2v-2zM2 2l4 6 3-4 3 5 2-3v4H2V2z"/>
+        </svg>
+      </div>
+      <div class="sidebar-item" title="Table" onclick="showDataTable()">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15">
+          <path d="M0 2h16v2H0V2zm0 4h16v2H0V6zm0 4h16v2H0v-2zm0 4h16v2H0v-2z"/>
+        </svg>
+      </div>
+    </aside>
+
+    <main class="dash-main">
+
+      <!-- Period Tabs -->
+      <div class="period-tabs">
+        <div class="period-tab active" onclick="setPeriod('day',   this)">Day</div>
+        <div class="period-tab"        onclick="setPeriod('week',  this)">Week</div>
+        <div class="period-tab"        onclick="setPeriod('month', this)">Month</div>
+        <div class="period-tab"        onclick="setPeriod('year',  this)">Year</div>
+        <div class="period-divider"></div>
+        <div class="date-range-wrap">
+          <input type="date" id="date-from" class="date-inp" onchange="applyDateFilter()"/>
+          <span class="date-sep">to</span>
+          <input type="date" id="date-to"   class="date-inp" onchange="applyDateFilter()"/>
+        </div>
+        <div class="period-right">
+          <span class="clean-pill" id="clean-pill">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Week vs Last Week Banner -->
+      <div class="week-banner" id="week-banner" style="display:none">
+        <div class="week-item">
+          <span class="week-label">This period</span>
+          <span class="week-val" id="week-this">—</span>
+        </div>
+        <div class="week-divider"></div>
+        <div class="week-item">
+          <span class="week-label">Last period</span>
+          <span class="week-val" id="week-last">—</span>
+        </div>
+        <div class="week-divider"></div>
+        <div class="week-item">
+          <span class="week-label">Change</span>
+          <span class="week-val" id="week-change">—</span>
+        </div>
+        <div class="week-divider"></div>
+        <div class="week-item">
+          <span class="week-label">Orders</span>
+          <span class="week-val" id="week-orders">—</span>
+        </div>
+      </div>
+
+      <div class="dash-content">
+
+        <!-- KPI Cards with Sparklines -->
+        <div class="kpi-row" id="kpi-row">
+          <div class="kpi-card purple shimmer" id="kpi-revenue">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend">Loading...</div>
+            <canvas class="kpi-spark-canvas" id="spark-revenue" height="32"></canvas>
+          </div>
+          <div class="kpi-card green shimmer" id="kpi-orders">
+            <div class="kpi-label">Total Orders</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend">Loading...</div>
+            <canvas class="kpi-spark-canvas" id="spark-orders" height="32"></canvas>
+          </div>
+          <div class="kpi-card amber shimmer" id="kpi-aov">
+            <div class="kpi-label">Avg Order Value</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend">Loading...</div>
+            <canvas class="kpi-spark-canvas" id="spark-aov" height="32"></canvas>
+          </div>
+          <div class="kpi-card blue shimmer" id="kpi-customers">
+            <div class="kpi-label">Total Customers</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-trend">Loading...</div>
+            <canvas class="kpi-spark-canvas" id="spark-customers" height="32"></canvas>
+          </div>
+        </div>
+
+        <!-- Dynamic Chart Grid -->
+        <div class="chart-grid" id="chart-grid">
+          <!-- Charts rendered dynamically by JS -->
+        </div>
+
+        <!-- Data Table (hidden by default) -->
+        <div class="data-table-wrap" id="data-table-wrap" style="display:none">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <div class="chart-title">Data Table</div>
+                <div class="chart-sub" id="table-sub">Period breakdown</div>
+              </div>
+              <button class="tbtn" onclick="hideDataTable()"
+                style="font-size:10px;padding:3px 8px">Close</button>
+            </div>
+            <div id="data-table-container" style="overflow-x:auto;margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- AI Story -->
+        <div class="bottom-row">
+          <div class="chart-card" style="grid-column:span 2">
+            <div class="story-header">
+              <div class="story-ai-dot"></div>
+              <span class="chart-title">AI Business Story</span>
+              <span style="font-size:10px;color:var(--tx2);margin-left:8px">
+                Powered by Groq · Llama 3.3
+              </span>
+            </div>
+            <div class="story-body" id="story-body">
+              <div class="story-placeholder">
+                Click <strong>✦ Generate AI Story</strong> in the top bar for Claude's analysis.
+              </div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Trending Products</div>
+            <div class="chart-sub">Top performers this period</div>
+            <div class="top-products-list" id="top-products"></div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Viz Panel (slide-in) -->
+    <div class="viz-panel" id="viz-panel">
+      <div class="viz-panel-header">
+        <span style="font-size:13px;font-weight:600;color:var(--tx)">
+          Visualization Settings
+        </span>
+        <button onclick="toggleVizPanel()"
+          style="background:none;border:none;cursor:pointer;color:var(--tx2);font-size:16px">
+          ✕
+        </button>
+      </div>
+      <div style="padding:12px">
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">
+          Recommended for your data
+        </div>
+        <div id="viz-recommended"></div>
+        <div style="font-size:11px;color:var(--tx2);margin:14px 0 8px">
+          All chart types
+        </div>
+        <div id="viz-available"></div>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <aside class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-avatar">
+          <svg viewBox="0 0 16 16" fill="#fff" width="12" height="12">
+            <path d="M8 1L10.5 6H15L11.5 9.5L13 14L8 11L3 14L4.5 9.5L1 6H5.5Z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="chat-name">DataLens AI</div>
+          <div class="chat-status">Groq · Llama 3.3 70B</div>
+        </div>
+        <div class="online-dot"></div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg ai">
+          Hi! Your data is loaded. Ask me anything about your business metrics.
+        </div>
+      </div>
+      <div class="chat-suggestions" id="chat-suggestions">
+        <button class="sugg-btn" onclick="sendSugg(this)">What is our revenue trend?</button>
+        <button class="sugg-btn" onclick="sendSugg(this)">Which products are trending?</button>
+        <button class="sugg-btn" onclick="sendSugg(this)">Any risks in the data?</button>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chat-input"
+               placeholder="Ask about your data…"
+               onkeydown="if(event.key==='Enter') sendChat()"/>
+        <button class="chat-send" onclick="sendChat()">
+          <svg viewBox="0 0 16 16" fill="#fff" width="12" height="12">
+            <path d="M2 2l12 6-12 6V9l8-1-8-1V2z"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
