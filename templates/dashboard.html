@@ -404,5 +404,171 @@
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<!-- ══════════════════════════════════════
+     FLOATING AI ASSISTANT
+════════════════════════════════════════ -->
+<link rel="stylesheet"
+  href="{{ url_for('static', filename='css/chatbot.css') }}"/>
+
+<!-- Floating Button -->
+<div class="ai-fab">
+  <button class="ai-fab-btn" onclick="toggleAssistant()">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
+        10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4
+        0h-2V8h2v8z"/>
+    </svg>
+  </button>
+  <div class="ai-fab-badge" id="ai-fab-badge">4</div>
+  <div class="ai-fab-tooltip">DataLens AI Assistant</div>
+</div>
+
+<!-- Assistant Window -->
+<div class="ai-assistant" id="ai-assistant-window">
+
+  <!-- Header -->
+  <div class="ai-header">
+    <div class="ai-header-avatar">
+      <svg viewBox="0 0 16 16">
+        <path d="M8 1L10.5 6H15L11.5 9.5L13 14L8 11L3 14L4.5 9.5L1 6H5.5Z"/>
+      </svg>
+    </div>
+    <div class="ai-header-info">
+      <div class="ai-header-name">DataLens AI Assistant</div>
+      <div class="ai-header-status">
+        <div class="ai-status-dot"></div>
+        Powered by Groq · Llama 3.3 70B
+      </div>
+    </div>
+    <div class="ai-header-actions">
+      <button class="ai-header-btn"
+        onclick="refreshInsights()" title="Refresh">↺</button>
+      <button class="ai-header-btn"
+        onclick="closeAssistant()" title="Close">✕</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="ai-tabs">
+    <div class="ai-tab active" id="ai-tab-chat"
+      onclick="switchAiTab('chat')">
+      <span class="ai-tab-icon">💬</span>Chat
+    </div>
+    <div class="ai-tab" id="ai-tab-insights"
+      onclick="switchAiTab('insights')">
+      <span class="ai-tab-icon">💡</span>Insights
+    </div>
+    <div class="ai-tab" id="ai-tab-charts"
+      onclick="switchAiTab('charts')">
+      <span class="ai-tab-icon">📊</span>Charts
+    </div>
+    <div class="ai-tab" id="ai-tab-predict"
+      onclick="switchAiTab('predict')">
+      <span class="ai-tab-icon">🔮</span>Predict
+    </div>
+  </div>
+
+  <!-- Chat Panel -->
+  <div class="ai-panel active" id="ai-panel-chat">
+    <div class="ai-messages" id="ai-messages">
+      <div class="ai-msg bot">
+        <div class="ai-msg-avatar bot">
+          <svg viewBox="0 0 16 16">
+            <path d="M8 1L10.5 6H15L11.5 9.5L13 14L8 11L3 14L4.5 9.5L1 6H5.5Z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="ai-msg-bubble">
+            Good day. I am DataLens AI, your professional
+            data analysis assistant. Your dataset has been
+            loaded and analysed. How may I assist you today?
+          </div>
+          <div class="ai-msg-time">Just now</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-quick-sugg">
+      <div class="ai-sugg-chip"
+        onclick="sendAiSugg('Summarise the key performance metrics')">
+        Key metrics summary
+      </div>
+      <div class="ai-sugg-chip"
+        onclick="sendAiSugg('What are the top performing items in this dataset?')">
+        Top performers
+      </div>
+      <div class="ai-sugg-chip"
+        onclick="sendAiSugg('Identify any risks or anomalies in the data')">
+        Risk analysis
+      </div>
+      <div class="ai-sugg-chip"
+        onclick="sendAiSugg('What chart type best represents this data?')">
+        Chart advice
+      </div>
+    </div>
+
+    <div class="ai-input-area">
+      <textarea class="ai-input" id="ai-chat-input"
+        placeholder="Ask anything about your data..."
+        rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiChat()}"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">
+      </textarea>
+      <button class="ai-send-btn" onclick="sendAiChat()">
+        <svg viewBox="0 0 16 16">
+          <path d="M2 2l12 6-12 6V9l8-1-8-1V2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Insights Panel -->
+  <div class="ai-panel" id="ai-panel-insights">
+    <div class="ai-insights-panel"
+      id="ai-insights-content">
+      <div class="insights-loading">
+        <div style="font-size:32px">💡</div>
+        <span>Click the Insights tab to generate<br>
+          AI-powered business insights</span>
+      </div>
+    </div>
+    <button class="ai-refresh-btn"
+      onclick="insightsLoaded=false;loadInsights()">
+      ↺ Regenerate Insights
+    </button>
+  </div>
+
+  <!-- Charts Panel -->
+  <div class="ai-panel" id="ai-panel-charts">
+    <div class="ai-charts-panel" id="ai-charts-content">
+      <div class="insights-loading">
+        <div style="font-size:32px">📊</div>
+        <span>Click the Charts tab to get<br>
+          AI chart recommendations</span>
+      </div>
+    </div>
+    <button class="ai-refresh-btn"
+      onclick="chartsLoaded=false;loadChartSuggestions()">
+      ↺ Refresh Suggestions
+    </button>
+  </div>
+
+  <!-- Predictions Panel -->
+  <div class="ai-panel" id="ai-panel-predict">
+    <div class="ai-predictions-panel"
+      id="ai-predict-content">
+      <div class="insights-loading">
+        <div style="font-size:32px">🔮</div>
+        <span>Click the Predict tab to generate<br>
+          AI trend forecasts</span>
+      </div>
+    </div>
+    <button class="ai-refresh-btn"
+      onclick="predictLoaded=false;loadPredictions()">
+      ↺ Refresh Predictions
+    </button>
+  </div>
+
+</div>
 </body>
 </html>

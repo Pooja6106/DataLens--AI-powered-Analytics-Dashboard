@@ -118,3 +118,55 @@ def api_chat():
         return jsonify({"reply": reply})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@dashboard_bp.route("/api/auto-insights")
+def api_auto_insights():
+    dataset, filepath = get_dataset()
+    if not dataset:
+        return jsonify({"error": "No dataset loaded"}), 404
+    try:
+        kpis    = session.get("kpis_summary")
+        if not kpis:
+            kpis = KPIEngine(filepath).compute()
+        chat    = AIChat()
+        insights = chat.generate_auto_insights(
+            kpis, dataset.original)
+        return jsonify(insights)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@dashboard_bp.route("/api/chart-suggestions")
+def api_chart_suggestions():
+    dataset, filepath = get_dataset()
+    if not dataset:
+        return jsonify({"error": "No dataset loaded"}), 404
+    try:
+        kpis        = session.get("kpis_summary")
+        if not kpis:
+            kpis = KPIEngine(filepath).compute()
+        chat        = AIChat()
+        suggestions = chat.suggest_charts(kpis)
+        return jsonify(suggestions)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@dashboard_bp.route("/api/predictions")
+def api_predictions():
+    dataset, filepath = get_dataset()
+    if not dataset:
+        return jsonify({"error": "No dataset loaded"}), 404
+    try:
+        kpis        = session.get("kpis_summary")
+        if not kpis:
+            kpis = KPIEngine(filepath).compute()
+        chat        = AIChat()
+        predictions = chat.predict_trends(kpis)
+        return jsonify(predictions)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
