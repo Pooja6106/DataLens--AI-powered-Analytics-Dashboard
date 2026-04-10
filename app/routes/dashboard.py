@@ -5,6 +5,8 @@ from app.models.dataset import Dataset
 from app.services.kpi_engine   import KPIEngine
 from app.services.story_engine import StoryEngine
 from app.services.ai_chat      import AIChat
+import pandas as pd
+from flask import current_app
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -166,6 +168,91 @@ def api_predictions():
         chat        = AIChat()
         predictions = chat.predict_trends(kpis)
         return jsonify(predictions)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@dashboard_bp.route("/api/dept-data")
+def api_dept_data():
+    dataset, filepath = get_dataset()
+    if not dataset:
+        return jsonify({"error": "No dataset found"}), 404
+    try:
+        from app.services.excel_parser import ExcelParser
+        import os
+
+        original = dataset.original or ""
+        ext      = os.path.splitext(original)[1].lower()
+
+        if ext not in [".xlsx",".xls",".xlsm"]:
+            return jsonify({"error": "Not an Excel file"}), 400
+
+        # Find original Excel file
+        excel_path = os.path.join(
+            current_app.config["UPLOAD_FOLDER"],
+            dataset.original
+        )
+        if not os.path.exists(excel_path):
+            return jsonify({
+                "departments": [],
+                "message": "Original Excel not found"
+            })
+
+        parser   = ExcelParser(excel_path)
+        _, depts = parser.parse()
+
+        dept_summaries = {}
+        for name, df in depts.items():
+            summary = {
+                "rows":    len(df),
+                "columns": list(df.columns),
+                "preview": df.head(3).fillna("").to_dict("records")
+            }
+            # Add key metrics per department
+            if name == "PRODUCTION":
+                for col in ["Production_Qty","Rejected_Qty","Downtime_Min"]:
+                    if col in df.columns:
+                        summary[col.lower()] = round(
+                            float(pd.to_numeric(
+                                df[col], errors="coerce"
+                            ).sum()), 2)
+            elif name == "QUALITY":
+                if "Defects" in df.columns:
+                    summary["total_defects"] = round(
+                        float(pd.to_numeric(
+                            df["Defects"], errors="coerce"
+                        ).sum()), 2)
+                if "Inspection_Status" in df.columns:
+                    vc = df["Inspection_Status"].value_counts()
+                    summary["pass_count"] = int(vc.get("OK", 0))
+                    summary["fail_count"] = int(vc.get("NOT OK", 0))
+            elif name == "HR":
+                if "Attendance_Status" in df.columns:
+                    vc = df["Attendance_Status"].value_counts()
+                    summary["present"] = int(vc.get("Present", 0))
+                    summary["absent"]  = int(vc.get("Absent",  0))
+                    summary["leave"]   = int(vc.get("Leave",   0))
+            elif name == "PURCHASE":
+                if "Order_Qty" in df.columns:
+                    summary["total_orders"] = round(
+                        float(pd.to_numeric(
+                            df["Order_Qty"], errors="coerce"
+                        ).sum()), 2)
+            elif name == "STORE":
+                if "Stock_Qty" in df.columns:
+                    summary["total_stock"] = round(
+                        float(pd.to_numeric(
+                            df["Stock_Qty"], errors="coerce"
+                        ).sum()), 2)
+
+            dept_summaries[name] = summary
+
+        return jsonify({
+            "departments": dept_summaries,
+            "count":       len(dept_summaries)
+        })
+
     except Exception as e:
         import traceback
         traceback.print_exc()

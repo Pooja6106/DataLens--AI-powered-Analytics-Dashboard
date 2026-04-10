@@ -1,12 +1,15 @@
 import os
 import json
 import uuid
-from flask              import Blueprint, render_template, request, jsonify, session, current_app
-from werkzeug.utils     import secure_filename
-from app.models.db      import db
-from app.models.dataset import Dataset
+from flask import (
+    Blueprint, render_template, request,
+    jsonify, session, current_app
+)
+from werkzeug.utils        import secure_filename
+from app.models.db         import db
+from app.models.dataset    import Dataset
 from app.services.data_cleaner import DataCleaner
-from app.utils.validators      import allowed_file
+from app.utils.validators  import allowed_file
 
 upload_bp = Blueprint("upload", __name__)
 
@@ -24,12 +27,12 @@ def api_upload():
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files["file"]
-
     if file.filename == "":
         return jsonify({"error": "No file selected"}), 400
-
     if not allowed_file(file.filename):
-        return jsonify({"error": "File type not allowed. Use CSV, XLSX or JSON"}), 400
+        return jsonify({
+            "error": "File type not allowed. Use CSV, XLSX or JSON"
+        }), 400
 
     try:
         original_name = secure_filename(file.filename)
@@ -38,11 +41,12 @@ def api_upload():
         filepath      = os.path.join(upload_folder, unique_name)
         file.save(filepath)
 
-        cleaner     = DataCleaner()
-        df, report  = cleaner.clean(filepath)
+        cleaner    = DataCleaner()
+        df, report = cleaner.clean(filepath)
 
-        clean_name  = f"clean_{unique_name}"
-        clean_path  = os.path.join(upload_folder, clean_name)
+        # Save cleaned version as CSV
+        clean_name = f"clean_{uuid.uuid4().hex}.csv"
+        clean_path = os.path.join(upload_folder, clean_name)
         df.to_csv(clean_path, index=False)
 
         dataset = Dataset(
@@ -60,13 +64,21 @@ def api_upload():
         session["dataset_file"] = clean_path
         session["columns"]      = list(df.columns)
 
+        # Add department info to report
+        extra = {}
+        if report.get("is_multi_dept"):
+            extra["is_multi_dept"] = True
+            extra["departments"]   = report.get("departments",[])
+
         return jsonify({
             "success":    True,
             "dataset_id": dataset.id,
-            "report":     report,
+            "report":     {**report, **extra},
             "columns":    list(df.columns),
             "redirect":   "/dashboard"
         })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500

@@ -1,4 +1,4 @@
-ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls", "json"}
+ALLOWED_EXTENSIONS = {"csv", "xlsx", "xls", "xlsm", "json"}
 
 def allowed_file(filename):
     return (

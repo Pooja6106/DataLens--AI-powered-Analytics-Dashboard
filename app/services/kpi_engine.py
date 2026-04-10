@@ -12,6 +12,33 @@ class KPIEngine:
         self.dept = DepartmentEngine(self.df)
         self._detect_columns()
 
+@staticmethod
+def from_excel_dept(filepath, dept_name):
+    """
+    Creates KPIEngine from a specific department
+    in a multi-department Excel file
+    """
+    from app.services.excel_parser import ExcelParser
+    parser   = ExcelParser(filepath)
+    _, depts = parser.parse()
+
+    dept_key = dept_name.upper()
+    if dept_key not in depts:
+        available = list(depts.keys())
+        dept_key  = available[0] if available else None
+
+    if dept_key and dept_key in depts:
+        df = depts[dept_key]
+        import tempfile, os
+        tmp = tempfile.NamedTemporaryFile(
+            suffix=".csv", delete=False)
+        df.to_csv(tmp.name, index=False)
+        tmp.close()
+        engine = KPIEngine(tmp.name)
+        os.unlink(tmp.name)
+        return engine
+    return None
+
     # ─────────────────────────────────────────
     # DETECT COLUMNS
     # ─────────────────────────────────────────
